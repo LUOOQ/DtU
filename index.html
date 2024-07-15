@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Material Library</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let materials = [];
+        let myChart = null;
+
+        function showDropdowns() {
+            document.getElementById('dropdowns').style.display = 'block';
+        }
+
+        async function populateDropdowns() {
+            try {
+                const response = await fetch('http://localhost:3000/materials');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                materials = await response.json();
+                console.log('Fetched materials:', materials);  // Debug logging
+
+                const materialSelect = document.getElementById('material');
+                const uniqueMaterials = new Set();
+
+                // Populate the sets
+                materials.forEach(item => {
+                    uniqueMaterials.add(item.material);
+                });
+
+                console.log('Unique materials:', uniqueMaterials);  // Debug logging
+
+                // Clear existing options and add default placeholder
+                materialSelect.innerHTML = '<option value="" disabled selected>Select material</option>';
+                const environmentSelect = document.getElementById('environment');
+                environmentSelect.innerHTML = '<option value="" disabled selected>Select environment</option>';
+
+                // Populate the material dropdown
+                uniqueMaterials.forEach(material => {
+                    const option = document.createElement('option');
+                    option.value = material; // Keep original value
+                    option.textContent = material;
+                    materialSelect.appendChild(option);
+                });
+
+                // Add event listener for material selection change
+                materialSelect.addEventListener('change', updateEnvironmentDropdown);
+                environmentSelect.addEventListener('change', updateTableAndChart);
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        function updateEnvironmentDropdown() {
+            const materialSelect = document.getElementById('material');
+            const environmentSelect = document.getElementById('environment');
+            const selectedMaterial = materialSelect.value;
+
+            const uniqueEnvironments = new Set();
+
+            // Populate the set with environments corresponding to the selected material
+            materials.forEach(item => {
+                if (item.material === selectedMaterial) {
+                    uniqueEnvironments.add(item.environment);
+                }
+            });
+
+            console.log('Unique environments for selected material:', uniqueEnvironments);  // Debug logging
+
+            // Clear existing options and add default placeholder
+            environmentSelect.innerHTML = '<option value="" disabled selected>Select environment</option>';
+
+            // Populate the environment dropdown
+            uniqueEnvironments.forEach(environment => {
+                const option = document.createElement('option');
+                option.value = environment; // Keep original value
+                option.textContent = environment;
+                environmentSelect.appendChild(option);
+            });
+        }
+
+        async function updateTableAndChart() {
+            const materialSelect = document.getElementById('material');
+            const environmentSelect = document.getElementById('environment');
+            const selectedMaterial = materialSelect.value;
+            const selectedEnvironment = environmentSelect.value;
+
+            console.log(`Selected Material: ${selectedMaterial}, Selected Environment: ${selectedEnvironment}`);  // Debug logging
+
+            if (selectedMaterial && selectedEnvironment) {
+                const filteredMaterials = materials.filter(material => material.material === selectedMaterial && material.environment === selectedEnvironment);
+
+                if (filteredMaterials.length > 0) {
+                    const data = filteredMaterials[0];
+                    console.log('Filtered Material Data:', data);  // Debug logging
+
+                    const table = document.getElementById('data-table');
+                    const tbody = table.querySelector('tbody');
+                    tbody.innerHTML = ''; // Clear existing rows
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${data.material}</td>
+                        <td>${data.environment}</td>
+                        <td>${data["initial cross-section"].join(' x ')}</td>
+                        <td>${data["initial tensile strength"]}</td>
+                    `;
+                    tbody.appendChild(row);
+
+                    // Show the table
+                    table.style.display = 'table';
+
+                    // Show the chart container
+                    document.getElementById('chart-container').style.display = 'block';
+
+                    // Generate the chart
+                    generateChart(data);
+                }
+            }
+        }
+
+        function generateChart(data) {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            const chartData = {
+                labels: data.time,
+                datasets: [{
+                    label: `Tensile Strength of ${data.material} in ${data.environment}`,
+                    data: data["tensile strength percentage"],
+                    fill: false,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(255, 99, 132, 1)'
+                }]
+            };
+
+            const config = {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    return `Time (min): ${context[0].label}`;
+                                },
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const strength = context.raw;
+                                    return `${label}: ${strength}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time (min)',
+                                font: {
+                                    size: 16 // Adjust the size as needed
+                                },
+                                padding: {
+                                    top: 20
+                                }
+
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Relative/Initial Tensile Strength',
+                                font: {
+                                    size: 16 // Adjust the size as needed
+                                },
+                                padding: {
+                                    bottom: 20
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                font: {
+                                    size: 16 // Adjust the size as needed
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            if (myChart) {
+                myChart.destroy();
+            }
+            myChart = new Chart(ctx, config);
+            console.log('Chart generated successfully');  // Debug logging
+        }
+
+        // Call the populateDropdowns function when the window loads
+        window.onload = populateDropdowns;
+    </script>
+    <style>
+        #chart-container {
+            width: 80%;
+            height: 400px;
+            margin: 20px auto;
+        }
+        #myChart {
+            width: 100%;
+            height: 100%;
+        }
+        .upload-btn {
+            position: absolute;
+            width: 50px;
+            top: 20px;
+            right: 20px;
+            background-color: #D9FAE1;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            text-decoration: none;
+            color: black;
+        }
+
+        .upload-btn:hover {
+            background-color: #D5F5DD;
+        }
+    </style>
+</head>
+<body>
+    <h1>Material Library</h1>
+    <a href="https://forms.gle/NWT1xkSbQgRAxRHs8" target="_blank" class="upload-btn">Upload</a>
+    <button onclick="showDropdowns()">Add a Query</button>
+    <div id="dropdowns" style="display: none;">
+        <div class="dropdown-container">
+            <label for="material">Select the material:</label>
+            <select id="material" name="material">
+                <!-- Options will be populated dynamically -->
+            </select>
+        </div>
+        <div class="dropdown-container">
+            <label for="environment">Select the environment:</label>
+            <select id="environment" name="environment">
+                <!-- Options will be populated dynamically -->
+            </select>
+        </div>
+    </div>
+    <table id="data-table" class="styled-table" style="display: none;">
+        <thead>
+            <tr>
+                <th>Material</th>
+                <th>Environment</th>
+                <th>Initial Cross-Section (mm²)</th>
+                <th>Initial Tensile Strength (MPa)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Rows will be populated dynamically -->
+        </tbody>
+    </table>
+    <div id="chart-container" style="display: none;">
+        <canvas id="myChart"></canvas>
+    </div>
+</body>
+</html>

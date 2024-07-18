@@ -14,7 +14,7 @@
 
         async function populateDropdowns() {
             try {
-                const response = await fetch('http://localhost:3000/materials');
+                const response = await fetch('https://raw.githubusercontent.com/qiuyuluuu/DtU/main/materials.json');
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
@@ -23,13 +23,16 @@
 
                 const materialSelect = document.getElementById('material');
                 const uniqueMaterials = new Set();
+                const uniqueEnvironments = new Set();
 
                 // Populate the sets
                 materials.forEach(item => {
                     uniqueMaterials.add(item.material);
+                    uniqueEnvironments.add(item.environment);
                 });
 
                 console.log('Unique materials:', uniqueMaterials);  // Debug logging
+                console.log('Unique environments:', uniqueEnvironments);  // Debug logging
 
                 // Clear existing options and add default placeholder
                 materialSelect.innerHTML = '<option value="" disabled selected>Select material</option>';
@@ -44,7 +47,15 @@
                     materialSelect.appendChild(option);
                 });
 
-                // Add event listener for material selection change
+                // Populate the environment dropdown
+                uniqueEnvironments.forEach(environment => {
+                    const option = document.createElement('option');
+                    option.value = environment; // Keep original value
+                    option.textContent = environment;
+                    environmentSelect.appendChild(option);
+                });
+
+                // Add event listeners for dropdown changes
                 materialSelect.addEventListener('change', updateEnvironmentDropdown);
                 environmentSelect.addEventListener('change', updateTableAndChart);
 

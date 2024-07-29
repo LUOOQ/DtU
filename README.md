@@ -6,7 +6,7 @@ For any questions, comment at Issues or contact Qiuyu (Luca) Lu at qiuyulu@berke
 # About the Project
 Access the full paper [here](https://doi.org/10.1145/3654777.3676464).
 
-Please note that **the UI may differ from the screenshots (Fig. 17) of the paper**, as the material library is continuously updated and maintained.
+Please note that **the UI may differ from the screenshots (Fig. 17) in the paper**, as the material library is continuously updated and maintained.
 
 # Acknowledgements
 Jihong Huang developed the initial offline version of this material library. 

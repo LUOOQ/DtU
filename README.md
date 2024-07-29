@@ -11,4 +11,4 @@ Please note that **the UI may differ from the screenshots (Fig. 17) of the paper
 # Acknowledgements
 Jihong Huang developed the initial offline version of this material library. 
 
-Lily Yang rewrote and migrated it online as of July 18th, 2024.
+Lily Yang rewrote and migrated it online as of July, 2024.
